@@ -16,32 +16,43 @@ public class ProbabilityMap{
 		}
 	}
 	
-	public double getProbability(int x, int y){
-		return map[x][y];
+	public double getProbability(Location loc){
+		return map[loc.x][loc.y];
 	}
 	
-	public double probOfBeingShot(int x, int y){
+	public double probOfBeingShot(Location loc){
 		return 0.0;
 	}
 	
-	public void setProbability(int x, int y, double value){
-		map[x][y] = value;
+	public void setProbability(Location loc, double value){
+		map[loc.x][loc.y] = value;
 	}
 	
-	public void towerSeen(int x, int y){
-		map[x][y] = 1.0;
+	public void towerSeen(Location loc){
+		map[loc.x][loc.y] = 1.0;
 	}
 	
-	public void forestSeen(int x, int y){
+	public void treeSeen(Location loc){
+		System.out.println("Tree seen");
 	}
 	
-	public void emptySquare(int x, int y){
-		map[x][y] = 0;
+	public void emptySquare(Location loc){
+		map[loc.x][loc.y] = 0;
 	}
 	
-	public void wasShot(int x, int y){
+	public void wasShot(Location loc){
 	}
 	
-	public void wasNotShot(int x, int y){
+	public void wasNotShot(Location loc){
+	}
+	
+	public void print(){
+		for(int i = 0; i< map[0].length; i++){
+			String line = "";
+			for(int j = 0; j< map.length; j++){
+				line = line + map[j][i] + ", ";
+			}
+			System.out.println(line);
+		}
 	}
 }

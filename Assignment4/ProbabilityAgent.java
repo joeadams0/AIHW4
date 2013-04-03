@@ -40,6 +40,7 @@ public class ProbabilityAgent extends Agent {
 	private int goldRequired = 2000;
 	private int step;
 	private StateView currentState;
+	private ProbabilityMap probMap;
 	
 	public ProbabilityAgent(int playernum, String[] arguments) {
 		super(playernum);
@@ -49,6 +50,7 @@ public class ProbabilityAgent extends Agent {
 	public Map<Integer, Action> initialStep(StateView newstate, History.HistoryView statehistory) {
 		step = 0;
 		currentState = newstate;
+		probMap = new ProbabilityMap(currentState.getXExtent(), currentState.getYExtent());
 		return middleStep(newstate, statehistory);
 	}
 
@@ -56,10 +58,71 @@ public class ProbabilityAgent extends Agent {
 	public Map<Integer,Action> middleStep(StateView newState, History.HistoryView statehistory) {
 		step++;
 		Map<Integer,Action> builder = new HashMap<Integer,Action>();
+		updateLocations();
+		//probMap.print();
 		currentState = newState;
 		return builder;
 	}
 
+	private void updateLocations(){
+		List<Location> newViewableLocations = getNewViewableLocations();
+		List<UnitView> units = currentState.getAllUnits();
+		List<ResourceView> trees = currentState.getResourceNodes(Type.TREE);
+		for(UnitView unit : units){
+			Iterator<Location> itr = newViewableLocations.iterator();
+			while(itr.hasNext()){
+				Location loc = itr.next();
+				if(loc.equals(unit.getXPosition(), unit.getYPosition())){
+					if(unit.getTemplateView().getName().equals("GuardTower")){
+						probMap.towerSeen(loc);
+						itr.remove();
+					}
+				}
+			}
+		}
+		
+		for(ResourceView tree : trees){
+			Iterator<Location> itr = newViewableLocations.iterator();
+			while(itr.hasNext()){
+				Location loc = itr.next();
+				if(loc.equals(tree.getXPosition(), tree.getYPosition())){
+					probMap.treeSeen(loc);
+					itr.remove();
+				}
+			}
+		}
+		
+		for(Location loc : newViewableLocations){
+			probMap.emptySquare(loc);
+		}
+	}
+	
+	private List<Location> getNewViewableLocations(){
+		List<Location> locations = new ArrayList<Location>();
+		for(int i = 0; i < currentState.getYExtent(); i++){
+			for(int j = 0; j < currentState.getXExtent(); j++){
+				if(currentState.canSee(j, i)){
+					Location loc = new Location(j, i);
+					if(probMap.getProbability(loc) != 0 && probMap.getProbability(loc) != 1){
+						locations.add(loc);
+					}				
+				}
+			}
+		}		
+		return locations;
+	}
+
+	private List<UnitView> getAllPeasants(){
+		List<UnitView> peasants = new ArrayList<UnitView>();
+		List<UnitView> units = currentState.getUnits(playernum);
+		for(UnitView unit : units){
+			if(unit.getTemplateView().getName().equals("Peasant")){
+				peasants.add(unit);
+			}
+		}
+		return peasants;
+	}
+	
 	@Override
 	public void terminalStep(StateView newstate, History.HistoryView statehistory) {
 		step++;
