@@ -65,6 +65,11 @@ public class ProbabilityAgent extends Agent {
 		currentState = newState;
 		updateLocations(); // What can they now see
 		Map<Integer,Action> actions = getPeasantActions(getAllPeasants(currentState));
+		System.out.println(step);
+		for(Action a : actions.values()){
+			System.out.println(a);
+		}
+		System.out.println("\n");
 		return actions;
 	}
 
@@ -74,32 +79,49 @@ public class ProbabilityAgent extends Agent {
 		for(UnitView peasant : peasants){
 			Location goal = getGoal(peasant);
 			Location loc = getLocation(peasant);
-			List<Location> neighbors = getNeighbors(loc);
-			Location bestLocation = null;
-			double minCost = 0;
-			for(Location neighbor : neighbors){
-				double prob = 1 - probMap.probOfBeingShot(neighbor);
-				double value = prob*dist(neighbor.x, neighbor.y, goal.x, goal.y);
-				if(bestLocation == null){
-					bestLocation = neighbor;
-					minCost = value;
-					continue;
+			// If it is next to the goal node
+			if(getNeighbors(goal).contains(loc)){
+				// Town Hall
+				if(goal.equals(new Location(0,currentState.getYExtent()))){
+					actions.put(peasant.getID(), Action.createPrimitiveDeposit(peasant.getID(), Direction.getDirection(0-loc.x, currentState.getYExtent() - loc.y)));
 				}
+				// Gold Mine
 				else{
-					if(value < minCost){
-						bestLocation = neighbor;
-						minCost = value;
-					}
+					actions.put(peasant.getID(), Action.createPrimitiveGather(peasant.getID(), Direction.getDirection(currentState.getXExtent()-loc.x, 0-loc.y)));
 				}
 			}
+			else{
+				List<Location> neighbors = getNeighbors(loc);
+				Location bestLocation = null;
+				double minCost = 0;
+				for(Location neighbor : neighbors){
+					double prob = probMap.probOfBeingShot(neighbor);
+					double value = prob*dist(neighbor.x, neighbor.y, goal.x, goal.y);
+					if(bestLocation == null){
+						bestLocation = neighbor;
+						minCost = value;
+						continue;
+					}
+					else{
+						if(value < minCost){
+							bestLocation = neighbor;
+							minCost = value;
+						}
+					}
+				}
+
+				// Create action
+				actions.put(peasant.getID(), Action.createPrimitiveMove(peasant.getID(), Direction.getDirection(bestLocation.x-loc.x, bestLocation.y - loc.y)));
+			}
 			
-			// Create the action
+			
+
 		}
 		return actions;
 	}
 
 	private List<Location> getNeighbors(Location loc){
-		List<Location> neighbors = new List<Location>();
+		List<Location> neighbors = new ArrayList<Location>();
 		for(int i = -1; i<=1; i++){
 			for(int j = -1; j<=1; j++){
 				if( !(i == 0 && j == 0)){
@@ -113,6 +135,7 @@ public class ProbabilityAgent extends Agent {
 				}
 			}
 		}
+		return neighbors;
 	}
 	
 	private Location getLocation(UnitView unit){
@@ -120,7 +143,6 @@ public class ProbabilityAgent extends Agent {
 	}
 	
 	private Location getGoal(UnitView peasant){
-		Map<UnitView, Location> = new Map<UnitView, Location>();
 		// Deposit at town hall
 		if(peasant.getCargoAmount() > 0){
 			return new Location(0, currentState.getYExtent());
@@ -207,7 +229,7 @@ public class ProbabilityAgent extends Agent {
 		return peasants;
 	}
 	
-	private int distance(int x1, int y1, int x2, int y2){
+	private int dist(int x1, int y1, int x2, int y2){
 		return (Math.abs(x1 - x2) + Math.abs(y1 - y2));
 	}
 	

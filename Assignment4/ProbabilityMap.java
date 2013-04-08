@@ -34,7 +34,7 @@ public class ProbabilityMap{
 	
 	public void treeSeen(Location loc){
 		map[loc.x][loc.y] = 0;
-		System.out.println("Tree seen");
+		//System.out.println("Tree seen");
 	}
 	
 	public void emptySquare(Location loc){
@@ -42,11 +42,11 @@ public class ProbabilityMap{
 	}
 	
 	public void wasShot(Location loc){
-		System.out.println(loc.toString() + " Was Shot");
+		//System.out.println(loc.toString() + " Was Shot");
 	}
 	
 	public void wasNotShot(Location loc){
-		System.out.println(loc.toString() + " Was Not Shot");
+		//System.out.println(loc.toString() + " Was Not Shot");
 	}
 	
 	public void print(){
