@@ -65,10 +65,8 @@ public class ProbabilityAgent extends Agent {
 		currentState = newState;
 		updateLocations(); // What can they now see
 		Map<Integer,Action> actions = getPeasantActions(getAllPeasants(currentState));
-		System.out.println(step);
-		for(Action a : actions.values()){
-			System.out.println(a);
-		}
+		System.out.println("Map:");
+		probMap.print();
 		System.out.println("\n");
 		return actions;
 	}
@@ -95,17 +93,20 @@ public class ProbabilityAgent extends Agent {
 				Location bestLocation = null;
 				double minCost = 0;
 				for(Location neighbor : neighbors){
-					double prob = probMap.probOfBeingShot(neighbor);
-					double value = prob*dist(neighbor.x, neighbor.y, goal.x, goal.y);
-					if(bestLocation == null){
-						bestLocation = neighbor;
-						minCost = value;
-						continue;
-					}
-					else{
-						if(value < minCost){
+					if(canMove(neighbor)){
+						double prob = probMap.probOfBeingShot(neighbor);
+						int distance = dist(neighbor.x, neighbor.y, goal.x, goal.y);
+						double value = prob*distance + distance;
+						if(bestLocation == null){
 							bestLocation = neighbor;
 							minCost = value;
+							continue;
+						}
+						else{
+							if(value < minCost){
+								bestLocation = neighbor;
+								minCost = value;
+							}
 						}
 					}
 				}
@@ -127,10 +128,8 @@ public class ProbabilityAgent extends Agent {
 				if( !(i == 0 && j == 0)){
 					int x = loc.x + j;
 					int y = loc.y + i;
-					if(y<currentState.getYExtent() && y>=0){
-						if(x<currentState.getXExtent() && x>0){
-							neighbors.add(new Location(x, y));
-						}
+					if(currentState.inBounds(x,y)){
+						neighbors.add(new Location(x,y));
 					}
 				}
 			}
@@ -138,6 +137,10 @@ public class ProbabilityAgent extends Agent {
 		return neighbors;
 	}
 	
+	private boolean canMove(Location loc){
+		return !(currentState.isUnitAt(loc.x, loc.y) || currentState.isResourceAt(loc.x,loc.y));
+	}
+
 	private Location getLocation(UnitView unit){
 		return new Location(unit.getXPosition(), unit.getYPosition());
 	}
@@ -179,7 +182,7 @@ public class ProbabilityAgent extends Agent {
 			while(itr.hasNext()){
 				Location loc = itr.next();
 				if(loc.equals(unit.getXPosition(), unit.getYPosition())){
-					if(unit.getTemplateView().getName().equals("GuardTower")){
+					if(unit.getTemplateView().getName().equals("GuardTower") || unit.getTemplateView().getName().equals("ScoutTower")){
 						probMap.towerSeen(loc);
 						itr.remove();
 					}
