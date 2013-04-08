@@ -9,9 +9,9 @@ public class ProbabilityMap{
 	public ProbabilityMap(int x, int y){
 		map = new double[x][y];
 		for(int i = 0; i<y; i++){
-			// Initialize whole map to 0.1 probability
+			// Initialize whole map to 0.05 probability
 			for(int j = 0; j<x; j++){
-				map[j][i] = 0.1;
+				map[j][i] = 0.05;
 			}
 		}
 	}
@@ -33,6 +33,7 @@ public class ProbabilityMap{
 	}
 	
 	public void treeSeen(Location loc){
+		map[loc.x][loc.y] = 0;
 		System.out.println("Tree seen");
 	}
 	
@@ -41,9 +42,11 @@ public class ProbabilityMap{
 	}
 	
 	public void wasShot(Location loc){
+		System.out.println(loc.toString() + " Was Shot");
 	}
 	
 	public void wasNotShot(Location loc){
+		System.out.println(loc.toString() + " Was Not Shot");
 	}
 	
 	public void print(){

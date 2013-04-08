@@ -41,6 +41,8 @@ public class ProbabilityAgent extends Agent {
 	private int step;
 	private StateView currentState;
 	private ProbabilityMap probMap;
+	private Location goldMine;
+	private Location townHall;
 	
 	public ProbabilityAgent(int playernum, String[] arguments) {
 		super(playernum);
@@ -50,6 +52,8 @@ public class ProbabilityAgent extends Agent {
 	public Map<Integer, Action> initialStep(StateView newstate, History.HistoryView statehistory) {
 		step = 0;
 		currentState = newstate;
+		goldMine = new Location(currentState.getXExtent(), currentState.getYExtent());
+		townHall = new Location(0, currentState.getYExtent());
 		probMap = new ProbabilityMap(currentState.getXExtent(), currentState.getYExtent());
 		return middleStep(newstate, statehistory);
 	}
@@ -57,11 +61,91 @@ public class ProbabilityAgent extends Agent {
 	@Override
 	public Map<Integer,Action> middleStep(StateView newState, History.HistoryView statehistory) {
 		step++;
-		Map<Integer,Action> builder = new HashMap<Integer,Action>();
-		updateLocations();
-		//probMap.print();
+		updatePeasantEvents(newState); // Have they been shot
 		currentState = newState;
-		return builder;
+		updateLocations(); // What can they now see
+		Map<Integer,Action> actions = getPeasantActions(getAllPeasants(currentState));
+		return actions;
+	}
+
+	private Map<Integer, Action> getPeasantActions(List<UnitView> peasants){
+		Map<Integer,Action> actions = new HashMap<Integer,Action>();
+		// Find the action that moves peasant closer with least likelihood of getting shot
+		for(UnitView peasant : peasants){
+			Location goal = getGoal(peasant);
+			Location loc = getLocation(peasant);
+			List<Location> neighbors = getNeighbors(loc);
+			Location bestLocation = null;
+			double minCost = 0;
+			for(Location neighbor : neighbors){
+				double prob = 1 - probMap.probOfBeingShot(neighbor);
+				double value = prob*dist(neighbor.x, neighbor.y, goal.x, goal.y);
+				if(bestLocation == null){
+					bestLocation = neighbor;
+					minCost = value;
+					continue;
+				}
+				else{
+					if(value < minCost){
+						bestLocation = neighbor;
+						minCost = value;
+					}
+				}
+			}
+			
+			// Create the action
+		}
+		return actions;
+	}
+
+	private List<Location> getNeighbors(Location loc){
+		List<Location> neighbors = new List<Location>();
+		for(int i = -1; i<=1; i++){
+			for(int j = -1; j<=1; j++){
+				if( !(i == 0 && j == 0)){
+					int x = loc.x + j;
+					int y = loc.y + i;
+					if(y<currentState.getYExtent() && y>=0){
+						if(x<currentState.getXExtent() && x>0){
+							neighbors.add(new Location(x, y));
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private Location getLocation(UnitView unit){
+		return new Location(unit.getXPosition(), unit.getYPosition());
+	}
+	
+	private Location getGoal(UnitView peasant){
+		Map<UnitView, Location> = new Map<UnitView, Location>();
+		// Deposit at town hall
+		if(peasant.getCargoAmount() > 0){
+			return new Location(0, currentState.getYExtent());
+		}
+		// Go to gold mine
+		else{
+			return new Location(currentState.getXExtent(), 0);
+		}
+	}
+	
+	private void updatePeasantEvents(StateView newState){
+		List<UnitView> oldViews = getAllPeasants(currentState);
+		List<UnitView> newViews = getAllPeasants(newState);
+		for(UnitView oldUnit : oldViews){
+			for(UnitView newUnit : newViews){
+				if(oldUnit.getID() == newUnit.getID()){					
+					if(oldUnit.getHP() != newUnit.getHP()){
+						probMap.wasShot(new Location(newUnit.getXPosition(), newUnit.getYPosition()));
+					}
+					else {
+						probMap.wasNotShot(new Location(newUnit.getXPosition(), newUnit.getYPosition()));
+					}
+				}
+			}
+		}
 	}
 
 	private void updateLocations(){
@@ -112,15 +196,19 @@ public class ProbabilityAgent extends Agent {
 		return locations;
 	}
 
-	private List<UnitView> getAllPeasants(){
+	private List<UnitView> getAllPeasants(StateView state){
 		List<UnitView> peasants = new ArrayList<UnitView>();
-		List<UnitView> units = currentState.getUnits(playernum);
+		List<UnitView> units = state.getUnits(playernum);
 		for(UnitView unit : units){
 			if(unit.getTemplateView().getName().equals("Peasant")){
 				peasants.add(unit);
 			}
 		}
 		return peasants;
+	}
+	
+	private int distance(int x1, int y1, int x2, int y2){
+		return (Math.abs(x1 - x2) + Math.abs(y1 - y2));
 	}
 	
 	@Override
