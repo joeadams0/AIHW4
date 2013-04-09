@@ -36,6 +36,15 @@ public class Square{
 		updateProbability();
 
 	}
+	public boolean isSeen(){
+		return hasBeenSeen;
+	}
+	public boolean isTree(){
+                return isTree;
+        }
+	public boolean isTower(){
+                return isTower;
+        }
 	public void updateProbability(){
 		if(hasBeenSeen){
 			if(isTower){
