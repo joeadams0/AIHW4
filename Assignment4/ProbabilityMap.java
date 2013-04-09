@@ -130,7 +130,7 @@ public class ProbabilityMap{
 		for(int i = 0; i< map[0].length; i++){
 			String line = "";
 			for(int j = 0; j< map.length; j++){
-				line = line + map[j][i] + ", ";
+				line = line + map[j][i].getProbability() + ", ";
 			}
 			System.out.println(line);
 		}
