@@ -1,23 +1,26 @@
 package Assignment4;
 
 public class ProbabilityMap{
-	private double[][] map;
+	private Square[][] map;
 	private double towerAccuracy = .75;
 	private int towerRange = 5;
 	private static int SHOOTING_RANGE = 5;
 	private static int TREE_RANGE = 2;
 	
 	public ProbabilityMap(int x, int y){
-		map = new double[x][y];
+		map = new Square[x][y];
 		for(int i = 0; i<y; i++){
 			// Initialize whole map to 0.05 probability
 			for(int j = 0; j<x; j++){
-				map[j][i] = 0.05;
+				map[j][i] = new Square();
 			}
 		}
 	}
 	
 	public double getProbability(Location loc){
+		return map[loc.x][loc.y].getProbability();
+	}
+	public Square getSquare(Location loc){
 		return map[loc.x][loc.y];
 	}
 	
@@ -47,16 +50,12 @@ public class ProbabilityMap{
 		return tmp;
 	}
 	
-	public void setProbability(Location loc, double value){
-		map[loc.x][loc.y] = value;
-	}
-	
 	public void towerSeen(Location loc){
-		map[loc.x][loc.y] = 1.0;
+		map[loc.x][loc.y].towerSeen();
 	}
 	
 	public void treeSeen(Location loc){
-		map[loc.x][loc.y] = 0;
+		map[loc.x][loc.y].treeSeen();
 		int lowerx = loc.x-TREE_RANGE;
                 int lowery = loc.y-TREE_RANGE;
                 int upperx = loc.x+TREE_RANGE;
@@ -73,16 +72,15 @@ public class ProbabilityMap{
                 for(int i=lowerx; i<=upperx; i++){
                         for(int j=lowery; j<uppery; j++){
 				current = new Location(i, j);
-				if(!(getProbability(current) == 0.0 || getProbability(current) >= .7 || getProbability(current) == .35)){
-					setProbability(new Location(i, j), Math.min(map[loc.x][loc.y] + 0.1, 1.0));
-				}
+				map[current.x][current.y].treeSeenInVicinity();
                         }
                 }
-		map[loc.x][loc.y] = 0;		return;
+		System.out.println("Tree seen");
+		return;
 	}
 	
 	public void emptySquare(Location loc){
-		map[loc.x][loc.y] = 0;
+		map[loc.x][loc.y].emptySquareSeen();
 	}
 	
 	public void wasShot(Location loc){
@@ -100,25 +98,39 @@ public class ProbabilityMap{
                         uppery = map[0].length - 1;
 		Location current=null;
 		for(int i=lowerx; i<=upperx; i++){
-            for(int j=lowery; j<uppery; j++){
-                current = new Location(i, j);
-                if(getProbability(current) == 0.0 || getProbability(current) >= 0.7){
-                        continue;
+                        for(int j=lowery; j<uppery; j++){
+				map[i][j].peasantShotNearby();
+                        }
                 }
-                setProbability(new Location(i, j), Math.min(getProbability(loc) + 0.2, 0.7));
-            }
-        }
+		System.out.println(loc.toString() + " Was Shot");
 	}
 	
 	public void wasNotShot(Location loc){
-		//System.out.println(loc.toString() + " Was Not Shot");
+                int lowerx = loc.x-SHOOTING_RANGE;
+                int lowery = loc.y-SHOOTING_RANGE;
+                int upperx = loc.x+SHOOTING_RANGE;
+                int uppery = loc.y+SHOOTING_RANGE;
+                if(lowerx < 0)
+                        lowerx = 0;
+                if(lowery < 0)
+                        lowery =0;
+                if(upperx >= map.length)
+                        upperx = map.length - 1;
+                if(uppery >= map[0].length)
+                        uppery = map[0].length - 1;
+                Location current=null;
+                for(int i=lowerx; i<=upperx; i++){
+                        for(int j=lowery; j<uppery; j++){
+                                map[i][j].peasantNotShotNearby();
+                        }
+                }
 	}
 	
 	public void print(){
 		for(int i = 0; i< map[0].length; i++){
 			String line = "";
 			for(int j = 0; j< map.length; j++){
-				line = line + map[j][i] + ", ";
+				line = line + map[j][i].getProbability() + ", ";
 			}
 			System.out.println(line);
 		}
