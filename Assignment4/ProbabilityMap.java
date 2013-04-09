@@ -78,9 +78,7 @@ public class ProbabilityMap{
 				}
                         }
                 }
-		map[loc.x][loc.y] = 0;
-		System.out.println("Tree seen");
-		return;
+		map[loc.x][loc.y] = 0;		return;
 	}
 	
 	public void emptySquare(Location loc){
@@ -102,15 +100,14 @@ public class ProbabilityMap{
                         uppery = map[0].length - 1;
 		Location current=null;
 		for(int i=lowerx; i<=upperx; i++){
-                        for(int j=lowery; j<uppery; j++){
-                                current = new Location(i, j);
-                                if(getProbability(current) == 0.0 || getProbability(current) >= 0.7){
-                                        continue;
-                                }
-                                setProbability(new Location(i, j), Math.min(getProbability(loc) + 0.2, 0.7));
-                        }
+            for(int j=lowery; j<uppery; j++){
+                current = new Location(i, j);
+                if(getProbability(current) == 0.0 || getProbability(current) >= 0.7){
+                        continue;
                 }
-		System.out.println(loc.toString() + " Was Shot");
+                setProbability(new Location(i, j), Math.min(getProbability(loc) + 0.2, 0.7));
+            }
+        }
 	}
 	
 	public void wasNotShot(Location loc){

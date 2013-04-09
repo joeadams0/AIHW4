@@ -11,11 +11,15 @@ public class Location{
 		return "(" + x + ", " + y + ")";
 	}
 	
-	public boolean equal(Location loc){
+	public boolean equals(Location loc){
 		return loc.x == x && loc.y == y;
 	}
 	
 	public boolean equals(int x, int y){
 		return x == this.x && y == this.y;
+	}
+
+	public boolean equals(Object o){
+		return this.equals((Location)o);
 	}
 }

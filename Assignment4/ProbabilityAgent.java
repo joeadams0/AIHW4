@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Iterator;
 import java.io.*;
+import java.util.PriorityQueue;		
 
 import edu.cwru.sepia.action.Action;
 import edu.cwru.sepia.action.ActionType;
@@ -43,6 +44,7 @@ public class ProbabilityAgent extends Agent {
 	private ProbabilityMap probMap;
 	private Location goldMine;
 	private Location townHall;
+	private Map<Integer, Integer> healthMap;
 	
 	public ProbabilityAgent(int playernum, String[] arguments) {
 		super(playernum);
@@ -55,19 +57,21 @@ public class ProbabilityAgent extends Agent {
 		goldMine = new Location(currentState.getXExtent(), currentState.getYExtent());
 		townHall = new Location(0, currentState.getYExtent());
 		probMap = new ProbabilityMap(currentState.getXExtent(), currentState.getYExtent());
+		healthMap = new HashMap<Integer, Integer>();
+		setHealthMap();
 		return middleStep(newstate, statehistory);
 	}
 
 	@Override
 	public Map<Integer,Action> middleStep(StateView newState, History.HistoryView statehistory) {
 		step++;
-		updatePeasantEvents(newState); // Have they been shot
 		currentState = newState;
+		updatePeasantEvents(); // Have they been shot
 		updateLocations(); // What can they now see
-		Map<Integer,Action> actions = getPeasantActions(getAllPeasants(currentState));
-		System.out.println("Map:");
+		System.out.println("Map");
 		probMap.print();
 		System.out.println("\n");
+		Map<Integer,Action> actions = getPeasantActions(getAllPeasants());
 		return actions;
 	}
 
@@ -76,11 +80,15 @@ public class ProbabilityAgent extends Agent {
 		// Find the action that moves peasant closer with least likelihood of getting shot
 		for(UnitView peasant : peasants){
 			Location goal = getGoal(peasant);
+			System.out.println(goal);
 			Location loc = getLocation(peasant);
+			List<Location> neighbors = getNeighbors(loc);
 			// If it is next to the goal node
-			if(getNeighbors(goal).contains(loc)){
+			if(neighbors.contains(goal)){
 				// Town Hall
-				if(goal.equals(new Location(0,currentState.getYExtent()))){
+				UnitView unit = getTownhall();
+				Location loc1 = new Location(unit.getXPosition(), unit.getYPosition());
+				if(goal.equals(loc1)){
 					actions.put(peasant.getID(), Action.createPrimitiveDeposit(peasant.getID(), Direction.getDirection(0-loc.x, currentState.getYExtent() - loc.y)));
 				}
 				// Gold Mine
@@ -89,28 +97,7 @@ public class ProbabilityAgent extends Agent {
 				}
 			}
 			else{
-				List<Location> neighbors = getNeighbors(loc);
-				Location bestLocation = null;
-				double minCost = 0;
-				for(Location neighbor : neighbors){
-					if(canMove(neighbor)){
-						double prob = probMap.probOfBeingShot(neighbor);
-						int distance = dist(neighbor.x, neighbor.y, goal.x, goal.y);
-						double value = prob*distance + distance;
-						if(bestLocation == null){
-							bestLocation = neighbor;
-							minCost = value;
-							continue;
-						}
-						else{
-							if(value < minCost){
-								bestLocation = neighbor;
-								minCost = value;
-							}
-						}
-					}
-				}
-
+				Location bestLocation = AStar(loc, goal).get(0);
 				// Create action
 				actions.put(peasant.getID(), Action.createPrimitiveMove(peasant.getID(), Direction.getDirection(bestLocation.x-loc.x, bestLocation.y - loc.y)));
 			}
@@ -121,6 +108,42 @@ public class ProbabilityAgent extends Agent {
 		return actions;
 	}
 
+	private List<Location> AStar(Location start, Location end){
+		return AStar(new SearchNode(start, dist(start.x, start.y, end.x, end.y), 0, probMap), new SearchNode(end, 0, 0, probMap));
+	}
+
+	private List<Location> AStar(SearchNode start, SearchNode end){
+		PriorityQueue<SearchNode> openList = new PriorityQueue<SearchNode>();
+		List<SearchNode> closedList = new List<SearchNode>();
+		List<Location> path = new List<Location>();
+		openList.add(start);
+		SearchNode bestNode = start;
+		while(openList.size() > 0){
+			SearchNode head = openList.peek();
+			openList.remove(head);
+			if(head.getHeuristic() == 0){
+				return generateList(head);
+			}
+			if(head.getHeuristic() < bestNode.getHeuristic()){
+				bestNode = head;
+			}
+			List<Location> neighbors = getNeighbors(head.getLocation());
+			for(Location neighbor : neighbors){
+				if(currentState.canSee(neighbor.x, neighbor.y)){
+					SearchNode node = new SearchNode(neighbor, dist(neighbor.x, neighbor.y, end.x, end.y), neighbor.Cost + 1, probMap);
+					if(openList.contains(node)){
+						updateNode(node, openList);
+					}
+					else if(!closedList.contains(node)){
+						openList.add(node);
+					}
+				}
+			}
+			closedList.add(head);
+		}
+		return generatePath(bestNode);
+	}
+
 	private List<Location> getNeighbors(Location loc){
 		List<Location> neighbors = new ArrayList<Location>();
 		for(int i = -1; i<=1; i++){
@@ -128,7 +151,7 @@ public class ProbabilityAgent extends Agent {
 				if( !(i == 0 && j == 0)){
 					int x = loc.x + j;
 					int y = loc.y + i;
-					if(currentState.inBounds(x,y)){
+					if(currentState.inBounds(x,y){
 						neighbors.add(new Location(x,y));
 					}
 				}
@@ -148,29 +171,45 @@ public class ProbabilityAgent extends Agent {
 	private Location getGoal(UnitView peasant){
 		// Deposit at town hall
 		if(peasant.getCargoAmount() > 0){
-			return new Location(0, currentState.getYExtent());
+			UnitView unit = getTownhall();
+			return new Location(unit.getXPosition(), unit.getYPosition());
 		}
 		// Go to gold mine
 		else{
-			return new Location(currentState.getXExtent(), 0);
+			ResourceView gold = getGoldMine();
+			if(gold == null){
+				return new Location(currentState.getXExtent(), 0);
+			}
+			else{
+				return new Location(gold.getXPosition(), gold.getYPosition());
+			}
 		}
 	}
 	
-	private void updatePeasantEvents(StateView newState){
-		List<UnitView> oldViews = getAllPeasants(currentState);
-		List<UnitView> newViews = getAllPeasants(newState);
-		for(UnitView oldUnit : oldViews){
-			for(UnitView newUnit : newViews){
-				if(oldUnit.getID() == newUnit.getID()){					
-					if(oldUnit.getHP() != newUnit.getHP()){
+	private void updatePeasantEvents(){
+		List<UnitView> newViews = getAllPeasants();
+		Map<Integer, Integer> map = new HashMap<Integer, Integer>();
+		for(UnitView newUnit : newViews){
+			boolean isContained = false;
+			for(Integer unitId : healthMap.keySet()){
+				if(unitId == newUnit.getID()){	
+					isContained = true;	
+					if(healthMap.get(unitId) != newUnit.getHP()){
 						probMap.wasShot(new Location(newUnit.getXPosition(), newUnit.getYPosition()));
 					}
 					else {
 						probMap.wasNotShot(new Location(newUnit.getXPosition(), newUnit.getYPosition()));
 					}
+					if(newUnit.getHP() >0){
+						map.put(unitId, newUnit.getHP());
+					}
 				}
 			}
+			if(!isContained){
+				map.put(newUnit.getID(), newUnit.getHP());
+			}
 		}
+		healthMap = map;
 	}
 
 	private void updateLocations(){
@@ -221,9 +260,16 @@ public class ProbabilityAgent extends Agent {
 		return locations;
 	}
 
-	private List<UnitView> getAllPeasants(StateView state){
+	private void setHealthMap(){
+		List<UnitView> peasants = getAllPeasants();
+		for(UnitView peasant : peasants){
+			healthMap.put(peasant.getID(), peasant.getHP());
+		}
+	}
+
+	private List<UnitView> getAllPeasants(){
 		List<UnitView> peasants = new ArrayList<UnitView>();
-		List<UnitView> units = state.getUnits(playernum);
+		List<UnitView> units = currentState.getUnits(playernum);
 		for(UnitView unit : units){
 			if(unit.getTemplateView().getName().equals("Peasant")){
 				peasants.add(unit);
@@ -232,6 +278,22 @@ public class ProbabilityAgent extends Agent {
 		return peasants;
 	}
 	
+	private UnitView getTownhall(){
+		for(UnitView unit : currentState.getUnits(playernum)){
+			if(unit.getTemplateView().getName().equals("TownHall")){
+				return unit;
+			}
+		}
+		return null;
+	}
+
+	private ResourceView getGoldMine(){
+		for(ResourceView resource : currentState.getResourceNodes(Type.GOLD_MINE)){
+			return resource;
+		}
+		return null;
+	}
+
 	private int dist(int x1, int y1, int x2, int y2){
 		return (Math.abs(x1 - x2) + Math.abs(y1 - y2));
 	}
