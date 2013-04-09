@@ -1,7 +1,7 @@
 package Assignment4;
 
 public class ProbabilityMap{
-	private Square[][] map;
+	public Square[][] map;
 	private double towerAccuracy = .75;
 	private int towerRange = 5;
 	private static int SHOOTING_RANGE = 5;

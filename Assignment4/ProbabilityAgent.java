@@ -80,7 +80,6 @@ public class ProbabilityAgent extends Agent {
 		// Find the action that moves peasant closer with least likelihood of getting shot
 		for(UnitView peasant : peasants){
 			Location goal = getGoal(peasant);
-			System.out.println(goal);
 			Location loc = getLocation(peasant);
 			List<Location> neighbors = getNeighbors(loc);
 			// If it is next to the goal node
@@ -109,28 +108,30 @@ public class ProbabilityAgent extends Agent {
 	}
 
 	private List<Location> AStar(Location start, Location end){
-		return AStar(new SearchNode(start, dist(start.x, start.y, end.x, end.y), 0, probMap), new SearchNode(end, 0, 0, probMap));
+		return AStar(new SearchNode(start, dist(start.x, start.y, end.x, end.y), 0, probMap, null), new SearchNode(end, 0, 0, probMap, null));
 	}
 
 	private List<Location> AStar(SearchNode start, SearchNode end){
 		PriorityQueue<SearchNode> openList = new PriorityQueue<SearchNode>();
-		List<SearchNode> closedList = new List<SearchNode>();
-		List<Location> path = new List<Location>();
+		List<SearchNode> closedList = new ArrayList<SearchNode>();
+		List<Location> path = new ArrayList<Location>();
 		openList.add(start);
 		SearchNode bestNode = start;
 		while(openList.size() > 0){
 			SearchNode head = openList.peek();
 			openList.remove(head);
+			System.out.println(head.Loc);
 			if(head.getHeuristic() == 0){
-				return generateList(head);
+				return generatePath(head);
 			}
 			if(head.getHeuristic() < bestNode.getHeuristic()){
 				bestNode = head;
 			}
-			List<Location> neighbors = getNeighbors(head.getLocation());
-			for(Location neighbor : neighbors){
-				if(currentState.canSee(neighbor.x, neighbor.y)){
-					SearchNode node = new SearchNode(neighbor, dist(neighbor.x, neighbor.y, end.x, end.y), neighbor.Cost + 1, probMap);
+			// If we have seen the square and there isnt anything in it
+			if(probMap.map[head.Loc.x][head.Loc.y].hasBeenSeen && !currentState.isUnitAt(head.Loc.x, head.Loc.y) && !currentState.isResourceAt(head.Loc.x, head.Loc.y) && !probMap.map[head.Loc.x][head.Loc.y].isTree && probMap.map[head.Loc.x][head.Loc.y].isTower){
+				List<Location> neighbors = getNeighbors(head.Loc);
+				for(Location neighbor : neighbors){
+					SearchNode node = new SearchNode(neighbor, dist(neighbor.x, neighbor.y, end.Loc.x, end.Loc.y), head.Cost + 1, probMap, head);
 					if(openList.contains(node)){
 						updateNode(node, openList);
 					}
@@ -138,10 +139,27 @@ public class ProbabilityAgent extends Agent {
 						openList.add(node);
 					}
 				}
+				closedList.add(head);
 			}
-			closedList.add(head);
 		}
 		return generatePath(bestNode);
+	}
+
+	private void updateNode(SearchNode node, PriorityQueue<SearchNode> openList){
+		for(SearchNode n : openList){
+			if(n.equals(node)){
+				n.update(node);
+			}
+		}
+	}
+
+	private List<Location> generatePath(SearchNode node){
+		List<Location> path = new ArrayList<Location>();
+		while(node != null){
+			path.add(0, node.Loc);
+			node = node.Parent;
+		}
+		return path;
 	}
 
 	private List<Location> getNeighbors(Location loc){
@@ -151,7 +169,7 @@ public class ProbabilityAgent extends Agent {
 				if( !(i == 0 && j == 0)){
 					int x = loc.x + j;
 					int y = loc.y + i;
-					if(currentState.inBounds(x,y){
+					if(currentState.inBounds(x,y)){
 						neighbors.add(new Location(x,y));
 					}
 				}

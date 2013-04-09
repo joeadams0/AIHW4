@@ -1,12 +1,12 @@
 package Assignment4;
 
 public class Square{
-	boolean hasBeenSeen;
-	boolean isTower;
-	boolean isTree;
-	int timesShot;
-	int opportunities;
-	int treesNearby;
+	public boolean hasBeenSeen;
+	public boolean isTower;
+	public boolean isTree;
+	public int timesShot;
+	public int opportunities;
+	public int treesNearby;
 	double probability;
 	public Square(){
 		hasBeenSeen=false;
