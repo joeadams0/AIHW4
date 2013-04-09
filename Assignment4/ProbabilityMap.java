@@ -79,7 +79,7 @@ public class ProbabilityMap{
                         }
                 }
 		map[loc.x][loc.y] = 0;
-		//System.out.println("Tree seen");
+		System.out.println("Tree seen");
 		return;
 	}
 	
@@ -110,7 +110,7 @@ public class ProbabilityMap{
                                 setProbability(new Location(i, j), Math.min(getProbability(loc) + 0.2, 0.7));
                         }
                 }
-		//System.out.println(loc.toString() + " Was Shot");
+		System.out.println(loc.toString() + " Was Shot");
 	}
 	
 	public void wasNotShot(Location loc){
