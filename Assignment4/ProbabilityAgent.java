@@ -108,42 +108,60 @@ public class ProbabilityAgent extends Agent {
 	}
 
 	private List<Location> AStar(Location start, Location end){
-		return AStar(new SearchNode(start, dist(start.x, start.y, end.x, end.y), 0, probMap, null), new SearchNode(end, 0, 0, probMap, null));
+		SearchNode startNode = new SearchNode(start, dist(start.x, start.y, end.x, end.y), 0, probMap, null);	
+		PriorityQueue<SearchNode> openList = new PriorityQueue<SearchNode>();
+                List<SearchNode> closedList = new ArrayList<SearchNode>();
+                List<Location> path = new ArrayList<Location>();
+                openList.add(startNode);	
+
+		List<Location> list = AStar(startNode, new SearchNode(end, 0, 0, probMap, null), openList, closedList, path);
+		System.out.println("ASTAR HAS FINISHED RUNNING!" + list.toString());
+		return list;
 	}
 
-	private List<Location> AStar(SearchNode start, SearchNode end){
+	private List<Location> AStar(SearchNode start, SearchNode end, PriorityQueue<SearchNode> openList, List<SearchNode> closedList, List<Location> path){
+		System.out.println("one iteration");
+		/*
 		PriorityQueue<SearchNode> openList = new PriorityQueue<SearchNode>();
 		List<SearchNode> closedList = new ArrayList<SearchNode>();
 		List<Location> path = new ArrayList<Location>();
 		openList.add(start);
+		*/
 		SearchNode bestNode = start;
 		while(openList.size() > 0){
 			SearchNode head = openList.peek();
 			openList.remove(head);
 			System.out.println(head.Loc);
 			if(head.getHeuristic() == 0){
+				System.out.println("Good Golly we found it!");
 				return generatePath(head);
 			}
 			if(head.getHeuristic() < bestNode.getHeuristic()){
 				bestNode = head;
 			}
 			// If we have seen the square and there isnt anything in it
-			if(probMap.map[head.Loc.x][head.Loc.y].hasBeenSeen && !currentState.isUnitAt(head.Loc.x, head.Loc.y) && !currentState.isResourceAt(head.Loc.x, head.Loc.y) && !probMap.map[head.Loc.x][head.Loc.y].isTree && probMap.map[head.Loc.x][head.Loc.y].isTower){
+			//if(probMap.map[head.Loc.x][head.Loc.y].hasBeenSeen && !currentState.isUnitAt(head.Loc.x, head.Loc.y) && !currentState.isResourceAt(head.Loc.x, head.Loc.y) && !probMap.map[head.Loc.x][head.Loc.y].isTree && !probMap.map[head.Loc.x][head.Loc.y].isTower){
 				List<Location> neighbors = getNeighbors(head.Loc);
+				System.out.println("neighbors: "+neighbors.toString());
 				for(Location neighbor : neighbors){
 					SearchNode node = new SearchNode(neighbor, dist(neighbor.x, neighbor.y, end.Loc.x, end.Loc.y), head.Cost + 1, probMap, head);
 					if(openList.contains(node)){
 						updateNode(node, openList);
 					}
-					else if(!closedList.contains(node)){
+					else if(!probMap.map[head.Loc.x][head.Loc.y].isTower && !probMap.map[head.Loc.x][head.Loc.y].isTree && !currentState.isResourceAt(head.Loc.x, head.Loc.y)){
 						openList.add(node);
+						System.out.println("new node added");
 					}
+					System.out.println("istower?: "+probMap.map[head.Loc.x][head.Loc.y].isTower+" isTree?: "+ probMap.map[head.Loc.x][head.Loc.y].isTree +"unit there? : "+currentState.isUnitAt(head.Loc.x, head.Loc.y) +" resource there?: "+ currentState.isResourceAt(head.Loc.x, head.Loc.y));
 				}
 				closedList.add(head);
-			}
+			//}
 		}
 		return generatePath(bestNode);
 	}
+
+
+
 
 	private void updateNode(SearchNode node, PriorityQueue<SearchNode> openList){
 		for(SearchNode n : openList){
