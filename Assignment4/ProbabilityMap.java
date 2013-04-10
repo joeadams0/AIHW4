@@ -75,7 +75,6 @@ public class ProbabilityMap{
 				map[current.x][current.y].treeSeenInVicinity();
                         }
                 }
-		System.out.println("Tree seen");
 		return;
 	}
 	
@@ -102,7 +101,6 @@ public class ProbabilityMap{
 				map[i][j].peasantShotNearby();
                         }
                 }
-		System.out.println(loc.toString() + " Was Shot");
 	}
 	
 	public void wasNotShot(Location loc){

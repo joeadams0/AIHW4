@@ -20,7 +20,7 @@ public class SearchNode implements Comparable<SearchNode>{
 	}
 
 	public double getHeuristic(){
-		return Cost + Distance;
+		return (Cost + Distance)* (1-Map.getProbability(Loc));
 	}
 
 	public boolean hasBeenSeen(){
@@ -29,18 +29,27 @@ public class SearchNode implements Comparable<SearchNode>{
 
 	public int compareTo(SearchNode node){
 		if(getHeuristic() < node.getHeuristic()){
-			return 1;
+			return -1;
 		}
 		else if(getHeuristic() > node.getHeuristic()){
-			return -1;
+			return 1;
 		}
 		else{
 			return 0;
 		}
 	}
+	
+	public boolean canMove(){
+		Square s = getSquare();
+		return !s.isTower && !s.isTree;
+	}
 
 	public boolean equals(SearchNode node){
 		return Loc.equals(node.Loc);
+	}
+	
+	public boolean equals(Object o){
+		return this.equals((SearchNode) o);
 	}
 
 	public void update(SearchNode node){

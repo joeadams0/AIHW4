@@ -68,9 +68,6 @@ public class ProbabilityAgent extends Agent {
 		currentState = newState;
 		updatePeasantEvents(); // Have they been shot
 		updateLocations(); // What can they now see
-		System.out.println("Map");
-		probMap.print();
-		System.out.println("\n");
 		Map<Integer,Action> actions = getPeasantActions(getAllPeasants());
 		return actions;
 	}
@@ -96,7 +93,7 @@ public class ProbabilityAgent extends Agent {
 				}
 			}
 			else{
-				Location bestLocation = AStar(loc, goal).get(0);
+				Location bestLocation = AStar(loc, goal).get(1);
 				// Create action
 				actions.put(peasant.getID(), Action.createPrimitiveMove(peasant.getID(), Direction.getDirection(bestLocation.x-loc.x, bestLocation.y - loc.y)));
 			}
@@ -110,58 +107,57 @@ public class ProbabilityAgent extends Agent {
 	private List<Location> AStar(Location start, Location end){
 		SearchNode startNode = new SearchNode(start, dist(start.x, start.y, end.x, end.y), 0, probMap, null);	
 		PriorityQueue<SearchNode> openList = new PriorityQueue<SearchNode>();
-                List<SearchNode> closedList = new ArrayList<SearchNode>();
-                List<Location> path = new ArrayList<Location>();
-                openList.add(startNode);	
+			List<SearchNode> closedList = new ArrayList<SearchNode>();
+			List<Location> path = new ArrayList<Location>();
+			openList.add(startNode);	
 
 		List<Location> list = AStar(startNode, new SearchNode(end, 0, 0, probMap, null), openList, closedList, path);
-		System.out.println("ASTAR HAS FINISHED RUNNING!" + list.toString());
 		return list;
 	}
 
 	private List<Location> AStar(SearchNode start, SearchNode end, PriorityQueue<SearchNode> openList, List<SearchNode> closedList, List<Location> path){
-		System.out.println("one iteration");
-		/*
-		PriorityQueue<SearchNode> openList = new PriorityQueue<SearchNode>();
-		List<SearchNode> closedList = new ArrayList<SearchNode>();
-		List<Location> path = new ArrayList<Location>();
-		openList.add(start);
-		*/
-		SearchNode bestNode = start;
+		SearchNode bestNode = null;
 		while(openList.size() > 0){
 			SearchNode head = openList.peek();
 			openList.remove(head);
-			System.out.println(head.Loc);
 			if(head.getHeuristic() == 0){
-				System.out.println("Good Golly we found it!");
 				return generatePath(head);
 			}
-			if(head.getHeuristic() < bestNode.getHeuristic()){
-				bestNode = head;
-			}
 			// If we have seen the square and there isnt anything in it
-			//if(probMap.map[head.Loc.x][head.Loc.y].hasBeenSeen && !currentState.isUnitAt(head.Loc.x, head.Loc.y) && !currentState.isResourceAt(head.Loc.x, head.Loc.y) && !probMap.map[head.Loc.x][head.Loc.y].isTree && !probMap.map[head.Loc.x][head.Loc.y].isTower){
+			if(haveSeen(head)){
 				List<Location> neighbors = getNeighbors(head.Loc);
-				System.out.println("neighbors: "+neighbors.toString());
 				for(Location neighbor : neighbors){
 					SearchNode node = new SearchNode(neighbor, dist(neighbor.x, neighbor.y, end.Loc.x, end.Loc.y), head.Cost + 1, probMap, head);
 					if(openList.contains(node)){
 						updateNode(node, openList);
 					}
-					else if(!probMap.map[head.Loc.x][head.Loc.y].isTower && !probMap.map[head.Loc.x][head.Loc.y].isTree && !currentState.isResourceAt(head.Loc.x, head.Loc.y)){
+					else if(!closedList.contains(node) && canMove(node)){
 						openList.add(node);
-						System.out.println("new node added");
 					}
-					System.out.println("istower?: "+probMap.map[head.Loc.x][head.Loc.y].isTower+" isTree?: "+ probMap.map[head.Loc.x][head.Loc.y].isTree +"unit there? : "+currentState.isUnitAt(head.Loc.x, head.Loc.y) +" resource there?: "+ currentState.isResourceAt(head.Loc.x, head.Loc.y));
 				}
-				closedList.add(head);
-			//}
+			}
+			if(bestNode == null ){
+				if(head != start)
+					bestNode = head;
+			}
+			else if(head.getHeuristic() <= bestNode.getHeuristic()){
+				bestNode = head;
+			}
+			closedList.add(head);
 		}
 		return generatePath(bestNode);
 	}
 
 
-
+	private boolean haveSeen(SearchNode node){
+		return node.hasBeenSeen();
+	}
+	
+	private boolean canMove(SearchNode node){
+		boolean canMove = !currentState.isUnitAt(node.Loc.x, node.Loc.y);
+		canMove = canMove && !currentState.isResourceAt(node.Loc.x, node.Loc.y);
+		return canMove && node.canMove();
+	}
 
 	private void updateNode(SearchNode node, PriorityQueue<SearchNode> openList){
 		for(SearchNode n : openList){
